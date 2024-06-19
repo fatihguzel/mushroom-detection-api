@@ -1,0 +1,2 @@
+!rm -rf /content/mobile_model.h5
+!rm -rf /content/res_model.h5
