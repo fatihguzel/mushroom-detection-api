@@ -112,35 +112,29 @@ class_indices_mobile = {'Amanita citrina': 0,
 'Vulpicida pinastri': 98,
 'Xanthoria parietina': 99}
 
-# Function to preprocess the image
+
 def preprocess_image(image_path):
     img = Image.open(image_path)
-    img = img.resize((256, 256))  # Resize image to match model's expected sizing
-    img_array = np.array(img)  # Convert PIL image to numpy array
-    img_array = img_array / 255.0  # Normalize pixel values to [0, 1]
-    img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
+    img = img.resize((256, 256))  
+    img_array = np.array(img)  
+    img_array = img_array / 255.0  
+    img_array = np.expand_dims(img_array, axis=0)  
     return img_array
 
 def classify_image(image_array):
     print(f'Image array shape: {image_array.shape}')
     
-    # Modelin tahminlerini al
     predicted_prob = model.predict(image_array)
     
-    # Tahmin edilen sınıfı belirle
     predicted_class = np.argmax(predicted_prob)
     
-    # Tahmin edilen sınıfın olasılığını al
     predicted_prob_value = predicted_prob[0][predicted_class]
     
-    # Loglama ile tüm sınıfların olasılıklarını yazdır
     print(f'Predicted probabilities: {predicted_prob}')
     
-    # En yüksek olasılığa sahip sınıfı ve bu sınıfın olasılığını yazdır
     print(f'Predicted class: {predicted_class}')
     print(f'Predicted probability: {predicted_prob_value}')
     
-    # Tahmin edilen sınıf ve olasılığını döndür
     return predicted_class, float(predicted_prob_value)
 
 
@@ -150,17 +144,14 @@ def get_true_labels(predicted_class):
     print(f'True labels: {true_labels}')
     return true_labels
 
-# Endpoint to handle image classification requests
 @app.route('/classify', methods=['POST'])
 def classify_from_post():
-    # Check if the post request has the file part
+
     if 'photo' not in request.files:
         return jsonify({'error': 'No file part'})
     
     file = request.files['photo']
     
-    # If user does not select file, browser also
-    # submit an empty part without filename
     if file.filename == '':
         return jsonify({'error': 'No selected file'})
     
@@ -169,22 +160,16 @@ def classify_from_post():
         file_path = os.path.join('', filename)
         file.save(file_path)
         
-        # Resim dosyasını ön işleme tabi tut
         image_array = preprocess_image(file_path)
         
-        # Model ile sınıflandırma yap
         predicted_class, predicted_prob = classify_image(image_array)
         
-        # Tahmin edilen sınıfı, class_indices_mobile sözlüğü ile eşleştir
         true_labels = get_true_labels(predicted_class)
         
-        # Tahmin edilen sınıfı integer olarak döndür (JSON serileştirme hatalarını önlemek için)
         predicted_class = int(predicted_class)
         
-        # Kaydedilen dosyayı sil
-        # os.remove(file_path)
+        os.remove(file_path)
         
-        # Sonucu JSON formatında döndür
         return jsonify({
             'predicted_class': predicted_class,
             'predicted_prob': predicted_prob,
