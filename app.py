@@ -2,7 +2,7 @@ import base64
 import openai.upload_progress
 import requests
 from flask import Flask, request, jsonify
-from tensorflow.keras.models import load_model
+from tensorflow.keras.models import load_model # type: ignore
 from PIL import Image
 import numpy as np
 import os
