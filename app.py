@@ -1,4 +1,5 @@
 import base64
+import openai.upload_progress
 import requests
 from flask import Flask, request, jsonify
 from tensorflow.keras.models import load_model
@@ -9,11 +10,11 @@ from werkzeug.utils import secure_filename
 from bs4 import BeautifulSoup
 import urllib.parse
 from googletrans import Translator
-
+import openai
 
 app = Flask(__name__)
 
-model = load_model("mobile_model.h5")
+model = load_model("google_model.h5")
 
 # Class indices dictionary
 class_indices_mobile = {
@@ -43,6 +44,14 @@ class_indices_mobile = {
     'Trametes versicolor': 92, 'Tremella mesenterica': 93, 'Trichaptum biforme': 94, 'Tricholomopsis rutilans': 95,
     'Urnula craterium': 96, 'Verpa bohemica': 97, 'Vulpicida pinastri': 98, 'Xanthoria parietina': 99
 }
+
+# OpenAI API key configuration
+openai.api_key = 'sk-proj-Wf5pvmDri1gKKJnVbKDZT3BlbkFJbqTsLh9IEruCuZQRkcMY'
+
+# api url
+url = 'https://api.openai.com/v1/engines/gpt-3.5-turbo/completions'
+
+
 
 def preprocess_image(image_path):
     try:
@@ -98,11 +107,24 @@ def get_wikipedia_data(class_name):
     except Exception as e:
         print(f"Error getting Wikipedia data: {e}")
         return None
-    
 
-
-
-
+def get_chatgpt_data(class_name):
+    try:
+        print(f'Getting ChatGPT data for class: {class_name}')
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {
+                    "role": "system",
+                    "content": f'{class_name} hakkında bilgi verir misin'
+                }
+            ],
+        )
+        print(response)
+        return response.choices[0].message['content']
+    except Exception as e:
+        print(f"Error getting ChatGPT data: {e}")
+        return None
 
 @app.route('/classify', methods=['POST'])
 def classify_from_post():
@@ -135,22 +157,20 @@ def classify_from_post():
             if not true_labels:
                 return jsonify({'error': 'Error retrieving true labels.'})
 
-
             wikipedia_data = get_wikipedia_data(true_labels[0])
+            chatgpt_data = get_chatgpt_data(true_labels[0])
 
-            if wikipedia_data is None:
-                return jsonify({'error': 'Error retrieving Wikipedia data.'})
+            if wikipedia_data is None and chatgpt_data is None:
+                return jsonify({'error': 'Error retrieving information data.'})
             
-            
-
             os.remove(file_path)
 
             return jsonify({
                 'predicted_class': int(predicted_class),
                 'predicted_prob': float(predicted_prob),
                 'true_labels': true_labels,
-                'wikipedia_data': wikipedia_data.split('.')[0],
-                # 'translated_content': translated_content.split('.')[0]
+                'wikipedia_data': wikipedia_data.split('.')[0] if wikipedia_data else '',
+                'chatgpt_data': chatgpt_data if chatgpt_data else ''
             })
 
         except Exception as e:
@@ -161,4 +181,4 @@ def classify_from_post():
 
 
 if __name__ == '__main__':
-    app.run(debug=True,port=5000)
+    app.run(host='0.0.0.0', debug=True, port=5000)
