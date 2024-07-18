@@ -14,9 +14,9 @@ import openai
 
 app = Flask(__name__)
 
-model = load_model("google_model_90.h5")
+model = load_model("google_model(86).h5")
 
-# Class indices dictionary
+
 class_indices_mobile = {
     'Amanita muscaria - Yenilemez': 0,
     'Amanita pantherina - Yenilemez': 1,
@@ -28,22 +28,22 @@ class_indices_mobile = {
     'Gyromitra infula - Yenilemez': 7,
     'Hericium coralloides - Yenilebilir': 8,
     'Lactarius torminosus - Yenilemez':     9,
-    'Leccinum scabrum - Yenilebilir':  10,
-    'Lepista nuda - Yenilebilir':  11,
-    'Macrolepiota procera - Yenilebilir':  12,
-    'Mutinus ravenelii - Yenilemez':  13,
-    'Paxillus involutus - Yenilemez':  14,
-    'Phallus impudicus - Yenilemez':  15,
-    'Phlebia radiata - Yenilemez':  16,
-    'Pholiota aurivella - Yenilebilir':  17,
-    'Sarcosoma globosum - Yenilemez':  18,
+    'Leccinum albostipitatum - Yenilemez':  10,
+    'Leccinum scabrum - Yenilebilir':  11,
+    'Lepista nuda - Yenilebilir':  12,
+    'Macrolepiota procera - Yenilebilir':  13,
+    'Mutinus ravenelii - Yenilemez':  14,
+    'Paxillus involutus - Yenilemez':  15,
+    'Phallus impudicus - Yenilemez':  16,
+    'Pholiota aurivella - Yenilebilir': 17,
+    'Sarcosoma globosum - Yenilemez' :  18,
     'Stereum hirsutum - Yenilemez':  19,
     'Trametes versicolor - Yenilebilir':  20,
     'Xanthoria parietina - Yenilemez':  21,
 }
 
 
-# OpenAI API key configuration
+
 openai.api_key = 'sk-proj-Wf5pvmDri1gKKJnVbKDZT3BlbkFJbqTsLh9IEruCuZQRkcMY'
 
 # api url
@@ -55,8 +55,10 @@ def preprocess_image(image_path):
         img = Image.open(image_path)
         img = img.resize((256, 256))
         img_array = np.array(img)
-        img_array = img_array / 255.0
         img_array = np.expand_dims(img_array, axis=0)
+        img_array = img_array / 255.0
+
+
         return img_array
     except FileNotFoundError as e:
         print(f"File not found error: {e}")
@@ -71,46 +73,18 @@ def preprocess_image(image_path):
 
 def classify_image(image_array):
     try:
-        print(f'Image array shape: {image_array.shape}')
         predicted_prob = model.predict(image_array)
         predicted_class = np.argmax(predicted_prob)
-        predicted_prob_value = predicted_prob[0][predicted_class]
-        print(f'Predicted probabilities: {predicted_prob}')
-        print(f'Predicted class: {predicted_class}')
-        print(f'Predicted probability: {predicted_prob_value}')
-        return predicted_class, float(predicted_prob_value)
+        predicted_prob_value = np.max(predicted_prob) * 100
+
+        return predicted_class, int(predicted_prob_value)
     except Exception as e:
         print(f"Error classifying image: {e}")
         return None, None
 
 
-def get_wikipedia_data(class_name):
-    try:
-        print(f'Getting Wikipedia data for class: {class_name}')
-        encoded_class_name = urllib.parse.quote(class_name)
-        wikipedia_url = f"https://en.wikipedia.org/wiki/{encoded_class_name}"
-
-        response = requests.get(wikipedia_url)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            paragraphs = soup.find_all('p')
-            content = ' '.join([paragraph.text for paragraph in paragraphs])
-            content = content.replace('\n', ' ')
-            content = content.replace('\xa0', ' ')
-
-            return content
-        else:
-            print(f"Failed to fetch Wikipedia data. Status code: {response.status_code}")
-            return None
-
-    except Exception as e:
-        print(f"Error getting Wikipedia data: {e}")
-        return None
-
-
 def get_chatgpt_data(class_name):
     try:
-        print(f'Getting ChatGPT data for class: {class_name}')
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -120,7 +94,6 @@ def get_chatgpt_data(class_name):
                 }
             ],
         )
-        print(response)
         return response.choices[0].message['content']
     except Exception as e:
         print(f"Error getting ChatGPT data: {e}")
@@ -160,11 +133,8 @@ def classify_from_post():
 
             chatgpt_data = get_chatgpt_data(true_labels[0])
 
-            
-
             os.remove(file_path)
 
-            # Determine if the mushroom is edible
             can_eat = 'Yenilebilir' in true_labels[0]
 
             return jsonify({
