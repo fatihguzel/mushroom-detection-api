@@ -44,7 +44,7 @@ class_indices_mobile = {
 
 
 
-openai.api_key = 'sk-proj-Wf5pvmDri1gKKJnVbKDZT3BlbkFJbqTsLh9IEruCuZQRkcMY'
+openai.api_key = 'YOUR_API_KEY'
 
 # api url
 url = 'https://api.openai.com/v1/engines/gpt-3.5-turbo/completions'
